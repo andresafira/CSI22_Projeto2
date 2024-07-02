@@ -11,12 +11,10 @@ from sound_manager import SoundManager
 from enemy import Grunt, BossMan, Hand
 
 class Player:
-
     def __init__(self, frame):
-
         self.frame = frame
-        self.position = Pose(c.ARENA_SIZE) * 0.5
-        Camera.position = self.position.copy() - Pose(c.WINDOW_SIZE)*0.5
+        self.position = c.INITIAL_PLAYER_POSE
+        Camera.position = c.INITIAL_CAMERA_POSE
         self.velocity = Pose((0, 0))
         self.sprite = Sprite(12, (0, 0))
         self.hand_sprite = Sprite(12, (0, 0))
@@ -25,65 +23,53 @@ class Player:
         self.since_damage = 999
         self.dead = False
 
-        self.health = 100
-        self.max_health = 100
+        self.health = c.INITIAL_HEALTH
+        self.max_health = c.MAX_HEALTH
 
-        walk_right = Animation.from_path(
-            "assets/images/walk_right.png",
-            sheet_size=(8, 1),
-            frame_count=8,
-        )
-        walk_left = Animation.from_path(
-            "assets/images/walk_right.png",
-            sheet_size=(8, 1),
-            frame_count=8,
-            reverse_x=True,
-        )
-        idle_right = Animation.from_path(
-            "assets/images/forward_idle.png",
-            sheet_size=(8, 1),
-            frame_count=8,
-        )
-        idle_left = Animation.from_path(
-            "assets/images/forward_idle.png",
-            sheet_size=(8, 1),
-            frame_count=8,
-            scale=1.0,
-            reverse_x=True,
-        )
-        walk_back_right = Animation.from_path(
-            "assets/images/walk_right_back.png",
-            sheet_size=(8, 1),
-            frame_count=8,
+        self.init_sprites()
 
-        )
-        walk_back_left = Animation.from_path(
-            "assets/images/walk_right_back.png",
-            sheet_size=(8, 1),
-            frame_count=8,
-            reverse_x=True,
-        )
-        rolling = Animation.from_path(
-            "assets/images/roll.png",
-            sheet_size=(6, 1),
-            frame_count=6,
-        )
-        dead = Animation.from_path(
-            "assets/images/player death.png",
-            sheet_size=(10, 1),
-            frame_count=10,
-        )
-        take_damage_right = Animation.from_path(
-            "assets/images/player_take_damage.png",
-            sheet_size=(6, 1),
-            frame_count=3,
-        )
-        take_damage_left = Animation.from_path(
-            "assets/images/player_take_damage.png",
-            sheet_size=(6, 1),
-            frame_count=3,
-            reverse_x=True,
-        )
+        self.animation_state = c.IDLE
+        self.last_lr_direction = c.RIGHT
+        self.rolling = False
+        self.firing = False
+        self.last_fire = 999
+        self.weapon_mode = c.GUN
+        self.aim_angle = 0
+        self.arm_angle = 0
+        self.aim_distance = c.INITIAL_AIM_DISTANCE
+        self.aim_knockback = 0
+        self.knockback_velocity = 0
+        self.radius = c.PLAYER_RADIUS
+        
+        self.init_sound_manager()
+
+        self.shadow = pygame.Surface((self.radius*2, self.radius*2))
+        self.shadow.fill((255, 255, 0))
+        self.shadow.set_colorkey((255, 255, 0))
+        pygame.draw.circle(self.shadow, (0, 0, 0), (self.radius, self.radius), self.radius)
+        self.shadow.set_alpha(60)
+    
+    @staticmethod
+    def get_animation(file_name: str, sheet_size: tuple[int, int], frame_count: int,
+                      reverse_x: bool = False, start_frame: int = 0) -> Animation:
+        path = "assets/images/" + file_name
+        animation = Animation.from_path(path, sheet_size=sheet_size,
+                                        frame_count=frame_count,
+                                        reverse_x=reverse_x)
+        return animation
+
+    def init_sprites(self):
+        walk_right = Player.get_animation("walk_right.png", (8, 1), 8)
+        walk_left = Player.get_animation("walk_right.png", (8, 1), 8, reverse_x=True)
+        idle_right = Player.get_animation("forward_idle.png", (8, 1), 8)
+        idle_left = Player.get_animation("forward_idle.png", (8, 1), 8, reverse_x=True)
+        walk_back_right = Player.get_animation("walk_right_back.png", (8, 1), 8)
+        walk_back_left = Player.get_animation("walk_right_back.png", (8, 1), 8, reverse_x=True)
+        rolling = Player.get_animation("roll.png", (6, 1), 6)
+        dead = Player.get_animation("player death.png", (10, 1), 10)
+        take_damage_right = Player.get_animation("player_take_damage.png", (6, 1), 3)
+        take_damage_left = Player.get_animation("player_take_damage.png", (6, 1), 3, reverse_x=True)
+
         self.sprite.add_animation(
             {
                 "WalkRight": walk_right,
@@ -115,62 +101,41 @@ class Player:
         self.sprite.add_callback("TakeDamageRight", self.stop_taking_damage)
         self.sprite.add_callback("TakeDamageLeft", self.stop_taking_damage)
         self.sprite.start_animation("WalkRight")
-
-        self.animation_state = c.IDLE
-        self.last_lr_direction = c.RIGHT
-        self.rolling = False
-        self.firing = False
-        self.last_fire = 999
-        self.weapon_mode = c.GUN
-        self.aim_angle = 0
-        self.arm_angle = 0
-        self.aim_distance = 75
-        self.aim_knockback = 0
-        self.knockback_velocity = 0
-        self.radius = 40
-
-        self.death_sound = SoundManager.load("assets/sounds/Player-Death.mp3")
-
-        self.shadow = pygame.Surface((self.radius*2, self.radius*2))
-        self.shadow.fill((255, 255, 0))
-        self.shadow.set_colorkey((255, 255, 0))
-        pygame.draw.circle(self.shadow, (0, 0, 0), (self.radius, self.radius), self.radius)
-        self.shadow.set_alpha(60)
-
-        self.take_damage = SoundManager.load("assets/sounds/Taking-Damage.ogg")
-
-        self.since_kick = 0
-        self.roll_sound = SoundManager.load("assets/sounds/die_roll.mp3")
-        self.footsteps = [SoundManager.load(f"assets/sounds/Footstep-{rel+1}.mp3") for rel in range(3)]
-        for step in self.footsteps:
-            step.set_volume(0.1)
-        self.shots = [SoundManager.load(f"assets/sounds/Gatling-Gun-{rel+1}.mp3") for rel in range(3)]
-        for shot in self.shots:
-            shot.set_volume(0.3)
-        self.shurikens = [SoundManager.load(f"assets/sounds/Shuriken-{rel+1}.mp3") for rel in range(3)]
-        for shuriken in self.shurikens:
-            shuriken.set_volume(0.3)
-        self.pistols = [SoundManager.load(f"assets/sounds/Pistol_v2.mp3") for rel in range(3)]
-        for shot in self.pistols:
-            shot.set_volume(0.5)
-        self.flame_bursts = [SoundManager.load(f"assets/sounds/Flame-Burst_v2.ogg") for rel in range(3)]
-        for shot in self.flame_bursts:
-            shot.set_volume(1)
-        self.breads = [SoundManager.load(f"assets/sounds/Bread-{rel+1}.mp3") for rel in range(3)]
-        for shot in self.breads:
-            shot.set_volume(0.2)
-
+        
         self.stamina_sprite = Sprite(16)
-        stamina = Animation.from_path("assets/images/stam wheel.png", sheet_size=(16, 1), frame_count=15)
-        stamina_idle = Animation.from_path("assets/images/stam wheel.png", sheet_size=(16, 1), frame_count=1)
+        stamina = Player.get_animation("stam wheel.png", (16, 1), 15)
+        stamina_idle = Player.get_animation("stam wheel.png", (16, 1), 1)
         self.stamina_sprite.add_animation({"Stamina": stamina, "StaminaIdle": stamina_idle})
         self.stamina_sprite.start_animation("StaminaIdle")
         self.stamina_sprite.add_callback("Stamina", self.hide_stamina)
 
-        # pygame.mixer.music.load("assets/sounds/Music-Intro.mp3")
-        # pygame.mixer.music.play()
-
         self.stamina_visible = False
+
+    def init_sound_manager(self):
+        self.death_sound = SoundManager.load("assets/sounds/Player-Death.mp3")
+        self.take_damage = SoundManager.load("assets/sounds/Taking-Damage.ogg")
+        self.since_kick = 0
+        self.roll_sound = SoundManager.load("assets/sounds/die_roll.mp3")
+
+        self.footsteps = [SoundManager.load(f"assets/sounds/Footstep-{rel+1}.mp3") for rel in range(3)]
+        self.shots = [SoundManager.load(f"assets/sounds/Gatling-Gun-{rel+1}.mp3") for rel in range(3)]
+        self.shurikens = [SoundManager.load(f"assets/sounds/Shuriken-{rel+1}.mp3") for rel in range(3)]
+        self.pistols = [SoundManager.load(f"assets/sounds/Pistol_v2.mp3") for rel in range(3)]
+        self.flame_bursts = [SoundManager.load(f"assets/sounds/Flame-Burst_v2.ogg") for rel in range(3)]
+        self.breads = [SoundManager.load(f"assets/sounds/Bread-{rel+1}.mp3") for rel in range(3)]
+        
+        for step in self.footsteps:
+            step.set_volume(0.1)
+        for shot in self.shots:
+            shot.set_volume(0.3)
+        for shuriken in self.shurikens:
+            shuriken.set_volume(0.3)
+        for shot in self.pistols:
+            shot.set_volume(0.5)
+        for shot in self.flame_bursts:
+            shot.set_volume(1)
+        for shot in self.breads:
+            shot.set_volume(0.2)
 
     def hide_stamina(self):
         self.stamina_visible = False
@@ -178,7 +143,6 @@ class Player:
     def reset_stamina(self):
         self.stamina_visible = True
         self.stamina_sprite.start_animation("Stamina")
-
 
     def stop_taking_damage(self):
         self.animation_state = c.IDLE
@@ -199,7 +163,7 @@ class Player:
         self.frame.damage_flash_alpha = 255
         self.frame.shake(direction, amt=30)
         self.since_damage = 0
-        self.health -= 40
+        self.health -= c.HEALTH_LOSS
         self.animation_state = c.TAKING_DAMAGE
         if self.last_lr_direction == c.RIGHT:
             self.sprite.start_animation("TakeDamageRight")
@@ -209,15 +173,13 @@ class Player:
     def update(self, dt, events):
         self.stamina_sprite.update(dt, events)
         self.since_damage += dt
-        self.health += 2*dt
-        if self.health > self.max_health:
-            self.health = self.max_health
+        self.health = min(self.health + 2*dt, self.max_health)
 
         if self.rolling:
-            if self.since_roll_finish != 0:
-                self.since_roll_finish = 0
+            self.since_roll_finish = 0
         else:
             self.since_roll_finish += dt
+
         self.last_fire += dt
         self.process_inputs(dt, events)
         self.sprite.set_position(self.position.get_position())
@@ -226,10 +188,12 @@ class Player:
         self.sprite.update(dt, events)
         self.hand_sprite.update(dt, events)
         self.update_hand(dt, events)
+
         if not self.firing and was_firing:
             self.hand_sprite.update(0, events)
         elif not self.rolling and was_rolling:
             self.hand_sprite.update(0, events)
+
         mpos = Camera.screen_to_world(pygame.mouse.get_pos())
         Camera.target = self.position.copy() * 0.8 + mpos * 0.2
         if self.animation_state == c.WALKING:
@@ -245,10 +209,11 @@ class Player:
                 random.choice(self.footsteps).play()
         if self.position.x - self.radius < 0:
             self.position.x = self.radius
-        if self.position.x + self.radius > c.ARENA_WIDTH:
-            self.position.x = c.ARENA_WIDTH - self.radius
         if self.position.y - self.radius < 0:
             self.position.y = self.radius
+        
+        if self.position.x + self.radius > c.ARENA_WIDTH:
+            self.position.x = c.ARENA_WIDTH - self.radius
         if self.position.y + self.radius > c.ARENA_HEIGHT:
             self.position.y = c.ARENA_HEIGHT - self.radius
 
@@ -266,8 +231,8 @@ class Player:
                 if enemy.boss_mode == c.BOSS_FIRING_LASER and abs(enemy.position.x - self.position.x) < 40:
                     self.get_hurt(Pose(((self.position - enemy.position).x, 0)))
                     enemy.swoop_above_player()
-
                     break
+
         if self.health < 0:
             if not self.dead:
                 self.die()
@@ -328,14 +293,17 @@ class Player:
                 self.since_kick = 0
             if direction.y >= 0:
                 if self.last_lr_direction == c.RIGHT:
-                    self.sprite.start_animation("WalkRight", restart_if_active=False, clear_time=clear_time)
+                    animation = "WalkRight"
                 else:
-                    self.sprite.start_animation("WalkLeft", restart_if_active=False, clear_time=clear_time)
+                    animation = "WalkLeft"
             else:
                 if self.last_lr_direction == c.RIGHT:
-                    self.sprite.start_animation("WalkBackRight", restart_if_active=False, clear_time=clear_time)
+                    animation = "WalkBackRight"
                 else:
-                    self.sprite.start_animation("WalkBackLeft", restart_if_active=False, clear_time=clear_time)
+                    animation = "WalkBackLeft"
+
+            self.sprite.start_animation(animation, restart_if_active=False, clear_time=clear_time)
+
         elif self.animation_state == c.IDLE:
             if self.dead:
                 self.sprite.start_animation("Dead", restart_if_active=False)
@@ -416,156 +384,36 @@ class Player:
             self.stamina_sprite.draw(surface, offset)
 
     def populate_hand_sprite(self, hand_sprite):
-        gun_idle_right = Animation.from_path(
-            "assets/images/gun.png",
-            sheet_size=(4, 1),
-            frame_count=1,
-        )
-        gun_idle_left = Animation.from_path(
-            "assets/images/gun.png",
-            sheet_size=(4, 1),
-            frame_count=1,
-            reverse_x=True,
-        )
-        gun_fire_left = Animation.from_path(
-            "assets/images/gun.png",
-            sheet_size=(4, 1),
-            frame_count=4,
-            reverse_x=True,
+        gun_idle_right = Player.get_animation("gun.png", (4, 1), 1)
+        gun_idle_left = Player.get_animation("gun.png", (4, 1), 1, reverse_x=True)
+        gun_fire_right = Player.get_animation("gun.png", (4, 1), 4, start_frame=1)
+        gun_fire_left = Player.get_animation("gun.png", (4, 1), 4, reverse_x=True, start_frame=1)
 
-            start_frame=1,
-        )
-        gun_fire_right = Animation.from_path(
-            "assets/images/gun.png",
-            sheet_size=(4,1),
-            frame_count=4,
+        gatling_idle_right = Player.get_animation("gatling_arm.png", (2, 1), 1)
+        gatling_idle_left = Player.get_animation("gatling_arm.png", (2, 1), 1, reverse_x=True)
+        gatling_fire_right = Player.get_animation("gatling_arm.png", (2, 1), 2)
+        gatling_fire_left = Player.get_animation("gatling_arm.png", (2, 1), 2, reverse_x=True)
 
-            start_frame=1,
-        )
-        gatling_idle_right = Animation.from_path(
-            "assets/images/gatling_arm.png",
-            sheet_size=(2, 1),
-            frame_count=1,
-        )
-        gatling_idle_left = Animation.from_path(
-            "assets/images/gatling_arm.png",
-            sheet_size=(2, 1),
-            frame_count=1,
-            reverse_x=True,
-        )
-        gatling_fire_left = Animation.from_path(
-            "assets/images/gatling_arm.png",
-            sheet_size=(2, 1),
-            frame_count=2,
-            reverse_x=True,
+        bread_idle_right = Player.get_animation("bread_arm.png", (4, 1), 1)
+        bread_idle_left = Player.get_animation("bread_arm.png", (4, 1), 1, reverse_x=True)
+        bread_fire_right = Player.get_animation("bread_arm.png", (4, 1), 4, start_frame=1)
+        bread_fire_left = Player.get_animation("bread_arm.png", (4, 1), 4, reverse_x=True, start_frame=1)
 
-        )
-        gatling_fire_right = Animation.from_path(
-            "assets/images/gatling_arm.png",
-            sheet_size=(2,1),
-            frame_count=2,
-        )
-        bread_fire_right = Animation.from_path(
-            "assets/images/bread_arm.png",
-            sheet_size=(4, 1),
-            frame_count=4,
+        shuriken_idle_right = Player.get_animation("shuriken_arm.png", (5, 1), 1)
+        shuriken_idle_left = Player.get_animation("shuriken_arm.png", (5, 1), 1, reverse_x=True)
+        shuriken_fire_right = Player.get_animation("shuriken_arm.png", (5, 1), 4, start_frame=1)
+        shuriken_fire_left = Player.get_animation("shuriken_arm.png", (5, 1), 4, reverse_x=True, start_frame=1)
 
-            start_frame=1,
-        )
-        bread_fire_left = Animation.from_path(
-            "assets/images/bread_arm.png",
-            sheet_size=(4, 1),
-            frame_count=4,
-            reverse_x=True,
+        knife_idle_right = Player.get_animation("knife arm final.png", (6, 1), 1)
+        knife_idle_left = Player.get_animation("knife arm final.png", (6, 1), 1, reverse_x=True)
+        knife_fire_right = Player.get_animation("knife arm final.png", (6, 1), 6, start_frame=1)
+        knife_fire_left = Player.get_animation("knife arm final.png", (6, 1), 6, reverse_x=True, start_frame=1)
 
-            start_frame=1,
-        )
-        bread_idle_right = Animation.from_path(
-            "assets/images/bread_arm.png",
-            sheet_size=(4, 1),
-            frame_count=1,
-        )
-        bread_idle_left = Animation.from_path(
-            "assets/images/bread_arm.png",
-            sheet_size=(4, 1),
-            frame_count=1,
-            reverse_x=True,
-        )
-        shuriken_fire_right = Animation.from_path(
-            "assets/images/shuriken_arm.png",
-            sheet_size=(5, 1),
-            frame_count=4,
-            start_frame=1,
-        )
-        shuriken_fire_left = Animation.from_path(
-            "assets/images/shuriken_arm.png",
-            sheet_size=(5, 1),
-            frame_count=4,
-            reverse_x=True,
+        fire_idle_right = Player.get_animation("fire_arm.png", (14, 1), 2)
+        fire_idle_left = Player.get_animation("fire_arm.png", (14, 1), 2, reverse_x=True)
+        fire_fire_right = Player.get_animation("fire_arm.png", (14, 1), 10, start_frame=0)
+        fire_fire_left = Player.get_animation("fire_arm.png", (14, 1), 10, reverse_x=True, start_frame=0)
 
-            start_frame=1,
-        )
-        shuriken_idle_right = Animation.from_path(
-            "assets/images/shuriken_arm.png",
-            sheet_size=(5, 1),
-            frame_count=1,
-        )
-        shuriken_idle_left = Animation.from_path(
-            "assets/images/shuriken_arm.png",
-            sheet_size=(5, 1),
-            frame_count=1,
-            reverse_x=True,
-        )
-        knife_fire_right = Animation.from_path(
-            "assets/images/knife arm final.png",
-            sheet_size=(6, 1),
-            frame_count=6,
-            start_frame=1,
-        )
-        knife_fire_left = Animation.from_path(
-            "assets/images/knife arm final.png",
-            sheet_size=(6, 1),
-            frame_count=6,
-            reverse_x=True,
-
-            start_frame=1,
-        )
-        knife_idle_right = Animation.from_path(
-            "assets/images/knife arm final.png",
-            sheet_size=(6, 1),
-            frame_count=1,
-        )
-        knife_idle_left = Animation.from_path(
-            "assets/images/knife arm final.png",
-            sheet_size=(6, 1),
-            frame_count=1,
-            reverse_x=True,
-        )
-        fire_idle_right = Animation.from_path(
-            "assets/images/fire_arm.png",
-            sheet_size=(14, 1),
-            frame_count=2,
-        )
-        fire_idle_left = Animation.from_path(
-            "assets/images/fire_arm.png",
-            sheet_size=(14, 1),
-            frame_count=2,
-            reverse_x=True,
-        )
-        fire_fire_right = Animation.from_path(
-            "assets/images/fire_arm.png",
-            sheet_size=(14, 1),
-            frame_count=10,
-            start_frame=0,
-        )
-        fire_fire_left = Animation.from_path(
-            "assets/images/fire_arm.png",
-            sheet_size=(14, 1),
-            frame_count=10,
-            reverse_x=True,
-
-            start_frame=0,
-        )
         hand_sprite.add_animation(
             {
                 "GunIdleLeft": gun_idle_left,
@@ -623,8 +471,8 @@ class Player:
         hand_sprite.start_animation("GunIdleRight")
 
         self.fire_sprite = Sprite(12)
-        fire = Animation.from_path("assets/images/flame.png",sheet_size=(14, 1),frame_count=4)
-        fire_vanish = Animation.from_path("assets/images/flame.png", sheet_size=(14, 1), frame_count=14, start_frame=2)
+        fire = Player.get_animation("flame.png", (14, 1), 4)
+        fire_vanish = Player.get_animation("flame.png", (14, 1), 14, start_frame=2)
         self.fire_sprite.add_animation({
             "Idle": fire,
             "Vanish": fire_vanish,
