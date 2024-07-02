@@ -488,9 +488,9 @@ class Player:
         aim_position = Camera.screen_to_world(mpos)
         relative = aim_position - self.position
         relative.scale_to(70)
-        da = self.aim_angle - relative.get_angle_of_position()*180/math.pi
-        da2 = self.aim_angle + 360 - relative.get_angle_of_position()*180/math.pi
-        da3 = self.aim_angle - 360 - relative.get_angle_of_position()*180/math.pi
+        da = self.aim_angle - relative.get_angle_of_position_degrees()
+        da2 = self.aim_angle + 360 - relative.get_angle_of_position_degrees()
+        da3 = self.aim_angle - 360 - relative.get_angle_of_position_degrees()
         target = (sorted([da, da2, da3], key=lambda x: abs(x)))[0]
         max_change = abs(target)
         change = target * 25 * dt
@@ -498,9 +498,9 @@ class Player:
             change *= abs(max_change)/abs(change)
         self.aim_angle -= change
 
-        da = self.arm_angle - relative.get_angle_of_position()*180/math.pi
-        da2 = self.arm_angle + 360 - relative.get_angle_of_position()*180/math.pi
-        da3 = self.arm_angle - 360 - relative.get_angle_of_position()*180/math.pi
+        da = self.arm_angle - relative.get_angle_of_position_degrees()
+        da2 = self.arm_angle + 360 - relative.get_angle_of_position_degrees()
+        da3 = self.arm_angle - 360 - relative.get_angle_of_position_degrees()
         target = (sorted([da, da2, da3], key=lambda x: abs(x)))[0]
         amt = target * 100
         if abs(amt) > 1000:
@@ -536,7 +536,7 @@ class Player:
         mpos = pygame.mouse.get_pos()
         relative = Camera.screen_to_world(mpos) - self.position
 
-        self.aim_angle = relative.get_angle_of_position()*180/math.pi
+        self.aim_angle = relative.get_angle_of_position_degrees()
         self.aim_knockback = 0
         self.arm_angle = self.aim_angle
         offset = self.position + Pose((math.cos(self.arm_angle*math.pi/180), -math.sin(self.arm_angle*math.pi/180))) * (self.aim_distance + 28)
