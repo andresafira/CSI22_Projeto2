@@ -23,7 +23,6 @@ class Enemy:
         self.fixed = False
         self.damaging = True
 
-
         try:
             self.damage_bread_sound = SoundManager.load("assets/sounds/Bread-Hits-Object.mp3")
             self.damage_bread_sound.set_volume(0.25)
@@ -47,8 +46,6 @@ class Enemy:
         except Exception as e:
             print(f"Error loading damage sound: {e}")
             self.damage_sound = None
-
-        self.damage_sound.set_volume(0.5)
 
         self.raised = False
 
@@ -74,15 +71,17 @@ class Enemy:
 
     def draw(self, surface, offset=(0, 0)):
         if not self.lethal:
-            if self.position.x < c.ARENA_WIDTH and self.position.x > 0:
-                if self.position.y < c.ARENA_HEIGHT and self.position.y > 0:
-                    surface.blit(self.shadow, (self.position.x - offset[0] - self.shadow.get_width()//2,
-                                               self.position.y - offset[1] - self.shadow.get_height()//2 + self.shadow_offset()))
+            if 0 < self.position.x < c.ARENA_WIDTH and 0 < self.position.y < c.ARENA_HEIGHT:
+                shadow_x = self.position.x - offset[0] - self.shadow.get_width() // 2
+                shadow_y = self.position.y - offset[1] - self.shadow.get_height() // 2 + self.shadow_offset()
+                surface.blit(self.shadow, (shadow_x, shadow_y))
+
         position_and_offset = Pose(offset)*-1 + self.position
-        if position_and_offset.x < -self.radius*2 or position_and_offset.x > c.WINDOW_WIDTH + self.radius*2 :
+
+        if not (-self.radius * 2 < position_and_offset.x < c.WINDOW_WIDTH + self.radius * 2 and
+                -self.radius * 2 < position_and_offset.y < c.WINDOW_HEIGHT + self.radius * 2):
             return
-        if position_and_offset.y < -self.radius*2  or position_and_offset.y > c.WINDOW_HEIGHT + self.radius*2 :
-            return
+
         self.sprite.set_position(self.position.get_position())
         self.sprite.draw(surface, offset=offset)
 
@@ -356,70 +355,6 @@ class BossMan(Enemy):
         if play_sound:
             self.buzz_sound.play()
 
-    def update(self, dt, events):
-        super().update(dt, events)
-        if self.boss_mode == c.BOSS_SPAWNING:
-            self.since_spawn += dt
-            if self.since_spawn > 1:
-                num_waves = math.ceil(self.difficulty() * 2.2) - 1
-                if self.enemy_wave_ct < num_waves and len(self.frame.enemies) < 15:
-                    self.since_spawn -= 1
-                    self.enemy_wave_ct += 1
-                    self.spawn_enemies()
-                else:
-                    if self.since_spawn > 5 and len(self.frame.enemies)<8:
-                        self.enemy_wave_ct = 0
-                        self.swoop_above_player()
-
-        if self.boss_mode in [c.BOSS_FIRING_LASER, c.BOSS_PREPARING_LASER]:
-            self.sprite.start_animation("Attack",restart_if_active=False)
-        else:
-            self.sprite.start_animation("Idle", restart_if_active=False)
-        if self.boss_mode == c.BOSS_SWOOPING:
-            if self.since_last_attack_finish > 2 - self.difficulty()*0.75:
-                self.next_attack()
-            target = self.frame.player.position + Pose((0, -500))
-            speed = (target - self.position) * 5
-            self.position += speed*dt
-            if (target - self.position).magnitude() < 100:
-                self.move_to_idle()
-        if self.boss_mode == c.BOSS_IDLE:
-            self.since_last_attack_finish += dt
-            if self.since_last_attack_finish > 2:
-                self.next_attack()
-            target = self.frame.player.position
-            speed = (target - self.position)
-            if speed.magnitude() > self.drift_speed:
-                speed.scale_to(self.drift_speed)
-            self.position += speed*dt
-        if self.boss_mode == c.BOSS_IDLE or self.boss_mode == c.BOSS_SWOOPING or self.boss_mode == c.BOSS_FIRING_LASER or self.boss_mode == c.BOSS_PREPARING_LASER:
-            self.hands[0].target_anchor = self.position + Pose((150, 120))
-            self.hands[1].target_anchor = self.position + Pose((-150, 120))
-        self.beam_sprite.update(dt, events)
-        self.beam_length_sprite.update(dt, events)
-        if self.boss_mode == c.BOSS_FIRING_LASER or self.boss_mode == c.BOSS_PREPARING_LASER:
-            self.sweep_speed += (self.sweep_target_speed - self.sweep_speed) * 4 * dt
-            self.position.y += (Camera.screen_to_world((0, 100)).y - self.position.y) * 5 * dt
-            if self.sweep_direction==c.RIGHT:
-                self.sweep_target_speed = 500 * (1 + self.difficulty()*2.5)
-                self.position.x += self.sweep_speed*dt
-                if Camera.world_to_screen((self.position.x, 0)).x > c.WINDOW_WIDTH - 100:
-                    self.sweep_direction = c.LEFT
-            else:
-                self.sweep_target_speed = -500 * (1 + self.difficulty()*2.5)
-                self.position.x += self.sweep_speed*dt
-                if Camera.world_to_screen((self.position.x, 0)).x < -100:
-                    self.swoop_above_player()
-        if self.boss_mode == c.BOSS_PREPARING_LASER:
-            self.sweep_position += (self.sweep_target - self.sweep_position) * 5 * dt
-            self.position.x = Camera.screen_to_world((self.sweep_position, 0)).x
-        self.since_hand_attack += dt
-        if self.boss_mode == c.BOSS_HAND_ATTACK and self.since_hand_attack > 6:
-            self.swoop_above_player()
-            for hand in self.hands:
-                hand.attacking = False
-                hand.target_z = 0
-
     def difficulty(self):
         total_health = self.health + self.hands[0].health + self.hands[1].health
         total_max_health = self.max_health + self.hands[0].max_health + self.hands[1].max_health
@@ -470,7 +405,91 @@ class BossMan(Enemy):
         self.frame.boss_dead = True
         self.laser_shoot_sound.stop()
 
+    def update(self, dt, events):
+        super().update(dt, events)
+        self.update_spawning(dt)
+        self.update_animation()
+        self.update_swooping(dt)
+        self.update_idle(dt)
+        self.update_hands()
+        self.update_beam_sprites(dt, events)
+        self.update_laser_attack(dt)
+        self.update_hand_attack(dt)
 
+    def update_spawning(self, dt):
+        if self.boss_mode == c.BOSS_SPAWNING:
+            self.since_spawn += dt
+            if self.since_spawn > 1:
+                num_waves = math.ceil(self.difficulty() * 2.2) - 1
+                if self.enemy_wave_ct < num_waves and len(self.frame.enemies) < 15:
+                    self.since_spawn -= 1
+                    self.enemy_wave_ct += 1
+                    self.spawn_enemies()
+                elif self.since_spawn > 5 and len(self.frame.enemies) < 8:
+                    self.enemy_wave_ct = 0
+                    self.swoop_above_player()
+
+    def update_animation(self):
+        if self.boss_mode in [c.BOSS_FIRING_LASER, c.BOSS_PREPARING_LASER]:
+            self.sprite.start_animation("Attack", restart_if_active=False)
+        else:
+            self.sprite.start_animation("Idle", restart_if_active=False)
+
+    def update_swooping(self, dt):
+        if self.boss_mode == c.BOSS_SWOOPING:
+            if self.since_last_attack_finish > 2 - self.difficulty() * 0.75:
+                self.next_attack()
+            target = self.frame.player.position + Pose((0, -500))
+            speed = (target - self.position) * 5
+            self.position += speed * dt
+            if (target - self.position).magnitude() < 100:
+                self.move_to_idle()
+
+    def update_idle(self, dt):
+        if self.boss_mode == c.BOSS_IDLE:
+            self.since_last_attack_finish += dt
+            if self.since_last_attack_finish > 2:
+                self.next_attack()
+            target = self.frame.player.position
+            speed = (target - self.position)
+            if speed.magnitude() > self.drift_speed:
+                speed.scale_to(self.drift_speed)
+            self.position += speed * dt
+
+    def update_hands(self):
+        if self.boss_mode in [c.BOSS_IDLE, c.BOSS_SWOOPING, c.BOSS_FIRING_LASER, c.BOSS_PREPARING_LASER]:
+            self.hands[0].target_anchor = self.position + Pose((150, 120))
+            self.hands[1].target_anchor = self.position + Pose((-150, 120))
+
+    def update_beam_sprites(self, dt, events):
+        self.beam_sprite.update(dt, events)
+        self.beam_length_sprite.update(dt, events)
+
+    def update_laser_attack(self, dt):
+        if self.boss_mode in [c.BOSS_FIRING_LASER, c.BOSS_PREPARING_LASER]:
+            self.sweep_speed += (self.sweep_target_speed - self.sweep_speed) * 4 * dt
+            self.position.y += (Camera.screen_to_world((0, 100)).y - self.position.y) * 5 * dt
+            if self.sweep_direction == c.RIGHT:
+                self.sweep_target_speed = 500 * (1 + self.difficulty() * 2.5)
+                self.position.x += self.sweep_speed * dt
+                if Camera.world_to_screen((self.position.x, 0)).x > c.WINDOW_WIDTH - 100:
+                    self.sweep_direction = c.LEFT
+            else:
+                self.sweep_target_speed = -500 * (1 + self.difficulty() * 2.5)
+                self.position.x += self.sweep_speed * dt
+                if Camera.world_to_screen((self.position.x, 0)).x < -100:
+                    self.swoop_above_player()
+        if self.boss_mode == c.BOSS_PREPARING_LASER:
+            self.sweep_position += (self.sweep_target - self.sweep_position) * 5 * dt
+            self.position.x = Camera.screen_to_world((self.sweep_position, 0)).x
+
+    def update_hand_attack(self, dt):
+        self.since_hand_attack += dt
+        if self.boss_mode == c.BOSS_HAND_ATTACK and self.since_hand_attack > 6:
+            self.swoop_above_player()
+            for hand in self.hands:
+                hand.attacking = False
+                hand.target_z = 0
 
 class Hand(Enemy):
     def __init__(self, position, frame, right=False):
