@@ -23,8 +23,13 @@ class Enemy:
         self.fixed = False
         self.damaging = True
 
-        self.damage_bread_sound = SoundManager.load("assets/sounds/Bread-Hits-Object.mp3")
-        self.damage_bread_sound.set_volume(0.25)
+
+        try:
+            self.damage_bread_sound = SoundManager.load("assets/sounds/Bread-Hits-Object.mp3")
+            self.damage_bread_sound.set_volume(0.25)
+        except Exception as e:
+            print(f"Error loading damage bread sound: {e}")
+            self.damage_bread_sound = None
 
         self.health_recently_lost = 0
         self.since_take_damage = 0
@@ -35,7 +40,14 @@ class Enemy:
         self.shadow.set_colorkey((255, 255, 0))
         pygame.draw.ellipse(self.shadow, (0, 0, 0), self.shadow.get_rect())
         self.shadow.set_alpha(60)
-        self.damage_sound = SoundManager.load("assets/sounds/Enemy-Damage.mp3")
+
+        try:
+            self.damage_sound = SoundManager.load("assets/sounds/Enemy-Damage.mp3")
+            self.damage_sound.set_volume(0.5)
+        except Exception as e:
+            print(f"Error loading damage sound: {e}")
+            self.damage_sound = None
+
         self.damage_sound.set_volume(0.5)
 
         self.raised = False
@@ -222,7 +234,12 @@ class BossMan(Enemy):
         self.fixed = True
         self.boss_mode = c.BOSS_IDLE
 
-        self.death_sound = SoundManager.load("assets/sounds/Boss-Death.mp3")
+        try:
+            self.death_sound = SoundManager.load("assets/sounds/Boss-Death.mp3")
+            self.death_sound.set_volume(0.5)
+        except Exception as e:
+            print(f"Error loading death sound: {e}")
+            self.death_sound = None
 
         self.beam_sprite = Sprite(12)
         charging = Animation.from_path("assets/images/laser_mouth.png", sheet_size=(19, 1), frame_count=15)
@@ -247,14 +264,28 @@ class BossMan(Enemy):
         self.sweep_speed = 0
         self.drift_speed = 100
 
-        self.laser_charge_sound = SoundManager.load("assets/sounds/Laser-Charge.mp3")
-        self.laser_shoot_sound = SoundManager.load("assets/sounds/Laser-Shoot.wav")
-        self.laser_charge_sound.set_volume(0.3)
+        try:
+            self.laser_charge_sound = SoundManager.load("assets/sounds/Laser-Charge.mp3")
+            self.laser_charge_sound.set_volume(0.3)
+        except Exception as e:
+            print(f"Error loading laser charge sound: {e}")
+            self.laser_charge_sound = None
+
+        try:
+            self.laser_shoot_sound = SoundManager.load("assets/sounds/Laser-Shoot.wav")
+            self.laser_shoot_sound.set_volume(0.5)
+        except Exception as e:
+            print(f"Error loading laser shot sound: {e}")
+            self.laser_shoot_sound = None
 
         #self.prepare_laser_attack()
 
-        self.buzz_sound =  SoundManager.load("assets/sounds/Wing-Buzz.mp3")
-        self.buzz_sound.set_volume(0.4)
+        try:
+            self.buzz_sound =  SoundManager.load("assets/sounds/Wing-Buzz.mp3")
+            self.buzz_sound.set_volume(0.4)
+        except Exception as e:
+            print(f"Error loading buzz sound: {e}")
+            self.buzz_sound = None
 
         self.since_last_attack_finish = 0
         self.since_laser_noise = 999
