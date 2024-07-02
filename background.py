@@ -34,6 +34,7 @@ class Cloud:
 
         surface.blit(self.surf, (x, y))
 
+
 class Background:
 
     def __init__(self):
@@ -46,6 +47,11 @@ class Background:
         self.clouds = []
 
         self.since_cloud = 0
+        self.since_cloud_MAX = 5
+        self.clouds_x_limit = 500
+        self.scale_adjustment = 0.5
+        self.alpha = 100
+        self.cloud_color = (255, 0, 195)
         tile_size = self.tile_size
         tiles_wide = math.ceil(surf.get_width()/tile_size[0])
         tiles_high = math.ceil(surf.get_height()/tile_size[1])
@@ -57,7 +63,7 @@ class Background:
                 xpix = x * tile_size[0]
                 tile_surf = pygame.Surface(tile_size)
                 tile_surf.fill((255, 0, 255))
-                tile_surf.blit(surf,(0, 0),(xpix, ypix, tile_size[0], tile_size[1]))
+                tile_surf.blit(surf, (0, 0), (xpix, ypix, tile_size[0], tile_size[1]))
                 row.append(tile_surf)
                 tile_surf.set_colorkey((255, 0, 255))
             self.tiles.append(row)
@@ -80,14 +86,14 @@ class Background:
 
     def update(self, dt, events):
         self.since_cloud += dt
-        while self.since_cloud > 5:
-            self.since_cloud -= 5
+        while self.since_cloud > self.since_cloud_MAX:
+            self.since_cloud -= self.since_cloud_MAX
             image = random.choice(self.cloud_images)
-            image = pygame.transform.scale(image, (image.get_width()*0.5, image.get_height()*0.5))
-            image.set_colorkey((255, 0, 195))
-            image.set_alpha(100)
+            image = pygame.transform.scale(image, (image.get_width()*self.scale_adjustment, image.get_height()*self.scale_adjustment))
+            image.set_colorkey(self.cloud_color)
+            image.set_alpha(self.alpha)
             self.clouds.append(Cloud(image, (c.WINDOW_WIDTH, random.random() * c.WINDOW_HEIGHT)))
         for cloud in self.clouds[:]:
             cloud.update(dt, events)
-            if cloud.position.x < -500:
+            if cloud.position.x < -self.clouds_x_limit:
                 self.clouds.remove(cloud)

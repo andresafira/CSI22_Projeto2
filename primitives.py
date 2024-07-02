@@ -41,6 +41,9 @@ class Pose:
     def get_angle_of_position(self) -> float:
         return math.atan2(-self.y, self.x)
 
+    def get_angle_of_position_degrees(self) -> float:
+        return math.atan2(-self.y, self.x)*180/math.pi
+
     def get_angle_radians(self) -> float:
         return self.angle*math.pi/180
 
@@ -123,11 +126,11 @@ class Pose:
 
     def __pow__(self, other):
         copy = self.copy()
-        if(copy.x>=0):
+        if copy.x >= 0:
             copy.x = copy.x ** other
         else:
             copy.x = (abs(copy.x) ** other) * -1
-        if (copy.y >= 0):
+        if copy.y >= 0:
             copy.y = copy.y ** other
         else:
             copy.y = (abs(copy.y) ** other) * -1
