@@ -40,6 +40,7 @@ class Instructions(Frame):
         self.shade.fill((0, 0, 0))
         self.shade_alpha = 255
 
+    # Handles removal of used objects i.e. bullets shot
     def update(self, dt, events):
         self.age += dt
         if self.age < 1.5 and self.age > 1.0:
