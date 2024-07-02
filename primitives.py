@@ -15,19 +15,19 @@ class GameObject:
 
 
 class Pose:
-    def __init__(self, position, angle=0):
+    def __init__(self, position: tuple[float, float], angle:float = 0):
         """ Initialize the Pose.
             position: two-length tuple (x, y)
             angle: angle, in degrees counterclockwise from right ->
         """
         self.set_position(position)
-        self.angle = angle
+        self.angle: float = angle
 
     def set_x(self, new_x):
-        self.x = new_x
+        self.x: float = new_x
 
     def set_y(self, new_y):
-        self.y = new_y
+        self.y: float = new_y
 
     def set_position(self, position):
         self.x, self.y = position
@@ -35,16 +35,16 @@ class Pose:
     def set_angle(self, angle):
         self.angle = angle
 
-    def get_position(self):
+    def get_position(self) -> tuple[float, float]:
         return self.x, self.y
 
-    def get_angle_of_position(self):
+    def get_angle_of_position(self) -> float:
         return math.atan2(-self.y, self.x)
 
-    def get_angle_radians(self):
+    def get_angle_radians(self) -> float:
         return self.angle*math.pi/180
 
-    def get_unit_vector(self):
+    def get_unit_vector(self) -> tuple[float, float]:
         """ Return the unit vector equivalent of the Pose's angle """
         # Note: y component is inverted because of indexing on displays;
         #       negative y points up, while positive y points down.
@@ -52,35 +52,35 @@ class Pose:
         unit_y = -math.sin(self.get_angle_radians())
         return unit_x, unit_y
 
-    def get_weighted_position(self, weight):
+    def get_weighted_position(self, weight: float) -> tuple[float, float]:
         return self.x*weight, self.y*weight
 
-    def add_position(self, position):
+    def add_position(self, position: tuple[float, float]):
         add_x, add_y = position
         self.set_x(self.x + add_x)
         self.set_y(self.y + add_y)
 
-    def add_angle(self, angle):
+    def add_angle(self, angle: float):
         self.set_angle(self.angle + angle)
 
-    def rotate_position(self, angle):
+    def rotate_position(self, angle: float):
         x = self.x*math.cos(angle*math.pi/180) \
             + self.y*math.sin(angle*math.pi/180)
         y = -self.x*math.sin(angle*math.pi/180) \
             + self.y*math.cos(angle*math.pi/180)
         self.set_position((x, y))
 
-    def add_pose(self, other, weight=1, frame=None):
+    def add_pose(self, other, weight:float =1, frame=None):
         if frame:
             other = other.copy()
             other.rotate_position(frame.angle)
         self.add_position(other.get_weighted_position(weight))
         self.add_angle(other.angle*weight)
 
-    def distance_to(self, other):
+    def distance_to(self, other) -> float:
         return (self - other).magnitude()
 
-    def magnitude(self):
+    def magnitude(self) -> float:
         distance = math.sqrt(self.x*self.x + self.y*self.y)
         return distance
 
@@ -92,7 +92,7 @@ class Pose:
     def copy(self):
         return Pose(self.get_position(), self.angle)
 
-    def scale_to(self, magnitude):
+    def scale_to(self, magnitude: float):
         """ Scale the X and Y components of the Pose to have a particular
             magnitude. Angle is unchanged.
         """
