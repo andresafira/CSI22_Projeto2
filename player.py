@@ -13,8 +13,8 @@ from enemy import Grunt, BossMan, Hand
 class Player:
     def __init__(self, frame):
         self.frame = frame
-        self.position = Pose(c.ARENA_SIZE) * 0.5
-        Camera.position = self.position.copy() - Pose(c.WINDOW_SIZE)*0.5
+        self.position = c.INITIAL_PLAYER_POSE
+        Camera.position = c.INITIAL_CAMERA_POSE
         self.velocity = Pose((0, 0))
         self.sprite = Sprite(12, (0, 0))
         self.hand_sprite = Sprite(12, (0, 0))
@@ -23,8 +23,8 @@ class Player:
         self.since_damage = 999
         self.dead = False
 
-        self.health = 100
-        self.max_health = 100
+        self.health = c.INITIAL_HEALTH
+        self.max_health = c.MAX_HEALTH
 
         self.init_sprites()
 
@@ -36,10 +36,10 @@ class Player:
         self.weapon_mode = c.GUN
         self.aim_angle = 0
         self.arm_angle = 0
-        self.aim_distance = 75
+        self.aim_distance = c.INITIAL_AIM_DISTANCE
         self.aim_knockback = 0
         self.knockback_velocity = 0
-        self.radius = 40
+        self.radius = c.PLAYER_RADIUS
         
         self.init_sound_manager()
 
@@ -163,7 +163,7 @@ class Player:
         self.frame.damage_flash_alpha = 255
         self.frame.shake(direction, amt=30)
         self.since_damage = 0
-        self.health -= 40
+        self.health -= c.HEALTH_LOSS
         self.animation_state = c.TAKING_DAMAGE
         if self.last_lr_direction == c.RIGHT:
             self.sprite.start_animation("TakeDamageRight")
