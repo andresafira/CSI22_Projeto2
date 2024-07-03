@@ -7,7 +7,6 @@ from sound_manager import SoundManager
 
 
 class Game:
-
     def __init__(self):
         pygame.init()
         if c.FULLSCREEN:
@@ -29,7 +28,7 @@ class Game:
     def main(self):
         current_frame = Instructions(self)
         current_frame.load()
-        self.clock.tick(60)
+        self.clock.tick(c.FRAMERATE)
 
         while True:
             dt, events = self.get_events()
@@ -51,13 +50,11 @@ class Game:
     def get_events(self):
         dt = self.clock.tick(c.FRAMERATE)/1000
 
-
         events = pygame.event.get()
         for event in events:
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                 pygame.quit()
                 sys.exit()
-
 
         return dt, events
 
