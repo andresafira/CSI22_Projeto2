@@ -4,7 +4,7 @@ import pygame
 import constants as c
 import math
 from camera import Camera
-from particle import Puff,MuzzleFlash,SparkParticle
+from particle import Puff, MuzzleFlash, SparkParticle
 from projectile import PistolBullet, Bread, Shuriken
 import random
 from sound_manager import SoundManager
@@ -484,10 +484,12 @@ class Player:
         aim_position = Camera.screen_to_world(mpos)
         relative = aim_position - self.position
         relative.scale_to(70)
+
         da = self.aim_angle - relative.get_angle_of_position_degrees()
         target = (sorted([da-360, da, da+360], key=lambda x: abs(x)))[0]
         max_change = abs(target)
         change = target * 25 * dt
+
         if abs(change) > abs(max_change) and target != 0:
             change *= abs(max_change)/abs(change)
         self.aim_angle -= change
@@ -505,7 +507,6 @@ class Player:
         self.arm_angle %= 360
         self.aim_angle %= 360
 
-        #self.aim_knockback *= 0.000001**dt
         self.aim_knockback += self.knockback_velocity*dt
         if self.knockback_velocity > -500:
             self.knockback_velocity -= 50000*dt
@@ -531,7 +532,7 @@ class Player:
         self.aim_angle = relative.get_angle_of_position_degrees()
         self.aim_knockback = 0
         self.arm_angle = self.aim_angle
-        offset = self.position + Pose((math.cos(self.arm_angle*math.pi/180), -math.sin(self.arm_angle*math.pi/180))) * (self.aim_distance + 28)
+        offset = self.position + Pose.polar(self.aim_distance + 28, self.arm_angle)
         knockback = Pose((0, 0))
 
         if self.weapon_mode == c.GUN:
@@ -547,7 +548,8 @@ class Player:
             knockback.scale_to(500)
             self.frame.shake(direction=relative, amt=15)
             for i in range(8):
-                self.frame.particles.append(SparkParticle(position=(self.hand_sprite.x, self.hand_sprite.y), velocity=relative.get_position(), duration=0.4, scale=20, color=(255, 180, 0)))
+                self.frame.particles.append(SparkParticle(position=(self.hand_sprite.x, self.hand_sprite.y),
+                                                          velocity=relative.get_position(), duration=0.4, scale=20, color=(255, 180, 0)))
         elif self.weapon_mode == c.BREAD:
             self.knockback_velocity = 0
             if relative.x < 0:
@@ -562,8 +564,9 @@ class Player:
                 self.hand_sprite.start_animation("GatlingFireLeft")
             else:
                 self.hand_sprite.start_animation("GatlingFireRight")
-            if self.velocity.magnitude() > 200:
-                self.velocity.scale_to(200)
+            if self.velocity.magnitude() > c.MAX_GATLING_SPEED:
+                self.velocity.scale_to(c.MAX_GATLING_SPEED)
+
             muzzle_offset = self.position + Pose.polar(self.aim_distance + 155, self.arm_angle) + Pose((0, 25))
             particle_offset = self.position + Pose.polar(self.aim_distance + 125, self.arm_angle) + Pose((0, 25))
             spark_offset = self.position + Pose.polar(self.aim_distance + 5, self.arm_angle) + Pose((0, 25))
@@ -578,7 +581,6 @@ class Player:
             knockback.scale_to(350)
             self.frame.shake(direction=relative, amt=10)
             for i in range(5):
-                pass
                 self.frame.particles.append(
                     SparkParticle(position=(particle_offset).get_position(), velocity=relative.get_position(),
                                   duration=0.3, scale=25, color=(255, 180, 0)))
