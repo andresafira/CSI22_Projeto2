@@ -63,6 +63,7 @@ class Instructions(Frame):
             self.title_pannel = pygame.transform.scale(self.title_pannel, surface.get_size())
             surface.blit(self.title_pannel, (0, 0))
         else:
+            self.instructions = pygame.transform.scale(self.instructions, surface.get_size())
             surface.blit(self.instructions, (0, 0))
             self.shade.set_alpha(self.shade_alpha)
             surface.blit(self.shade, (0, 0))
