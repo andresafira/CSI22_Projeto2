@@ -1,5 +1,4 @@
-# Six Shooter
+# Six Shooter Refactored
+O repositório em questão é relativo à atividade avaliativa do segundo bimestre de CSI22 - COMP26 - 2024.
 
-The source code for Six Shooter, an entry for the 2022 GMTK Game Jam! You can download the game from its [Itch.io page](https://plasmastarfish.itch.io/six-shooter).
-
-![image](https://user-images.githubusercontent.com/22649301/179655160-f494eb6a-b59d-45b8-b379-7a6a000f14fc.png)
+O código em questão trata-se de uma refatoração do jogo [Six-Shooter](https://github.com/jeremycryan/Six-Shooter).
