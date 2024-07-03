@@ -15,6 +15,13 @@ class GameObject:
 
 
 class Pose:
+    @staticmethod
+    def polar(r: float, theta_degree: float, angle: float = 0):
+        theta = theta_degree * math.pi / 180
+        x = r*math.cos(theta)
+        y = -r*math.sin(theta)
+        return Pose((x, y), angle)
+
     def __init__(self, position: tuple[float, float], angle:float = 0):
         """ Initialize the Pose.
             position: two-length tuple (x, y)
