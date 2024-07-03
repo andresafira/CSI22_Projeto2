@@ -17,6 +17,7 @@ class GameObject:
 class Pose:
     @staticmethod
     def polar(r: float, theta_degree: float, angle: float = 0):
+        """Initialize a Pose object using polar coordinates as reference"""
         theta = theta_degree * math.pi / 180
         x = r*math.cos(theta)
         y = -r*math.sin(theta)
@@ -25,21 +26,23 @@ class Pose:
     def __init__(self, position: tuple[float, float], angle:float = 0):
         """ Initialize the Pose.
             position: two-length tuple (x, y)
-            angle: angle, in degrees counterclockwise from right ->
+            angle: angle, in degrees counterclockwise from right
         """
+        self.x: float = 0.0
+        self.y: float = 0.0
         self.set_position(position)
         self.angle: float = angle
 
-    def set_x(self, new_x):
-        self.x: float = new_x
+    def set_x(self, new_x: float):
+        self.x = new_x
 
-    def set_y(self, new_y):
-        self.y: float = new_y
+    def set_y(self, new_y: float):
+        self.y = new_y
 
-    def set_position(self, position):
+    def set_position(self, position: tuple[float, float]):
         self.x, self.y = position
 
-    def set_angle(self, angle):
+    def set_angle(self, angle: float):
         self.angle = angle
 
     def get_position(self) -> tuple[float, float]:
@@ -55,9 +58,9 @@ class Pose:
         return self.angle*math.pi/180
 
     def get_unit_vector(self) -> tuple[float, float]:
-        """ Return the unit vector equivalent of the Pose's angle """
-        # Note: y component is inverted because of indexing on displays;
-        #       negative y points up, while positive y points down.
+        """ Return the unit vector equivalent of the Pose's angle
+        ## Note: y component is inverted because of indexing on displays;
+        ##       negative y points up, while positive y points down."""
         unit_x = math.cos(self.get_angle_radians())
         unit_y = -math.sin(self.get_angle_radians())
         return unit_x, unit_y
