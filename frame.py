@@ -31,10 +31,12 @@ class Frame:
 class Instructions(Frame):
     def __init__(self, game):
         self.game = game
+        self.show_title = True
         super().__init__()
         self.age = 0
 
     def load(self):
+        self.title_pannel = pygame.image.load("assets/images/new_title.png")
         self.instructions = pygame.image.load("assets/images/Instructions.png")
         self.shade = pygame.Surface(c.WINDOW_SIZE)
         self.shade.fill((0, 0, 0))
@@ -43,7 +45,8 @@ class Instructions(Frame):
     # Handles removal of used objects i.e. bullets shot
     def update(self, dt, events):
         self.age += dt
-        if self.age < 1.5 and self.age > 1.0:
+        if self.age < 3.5 and self.age > 3.0:
+            self.show_title = False
             self.shade_alpha -= 600*dt
         elif self.age > 6:
             if self.shade_alpha < 0:
@@ -56,9 +59,13 @@ class Instructions(Frame):
         return GameFrame(self.game)
 
     def draw(self, surface, offset=(0, 0)):
-        surface.blit(self.instructions, (0, 0))
-        self.shade.set_alpha(self.shade_alpha)
-        surface.blit(self.shade, (0, 0))
+        if self.show_title:
+            self.title_pannel = pygame.transform.scale(self.title_pannel, surface.get_size())
+            surface.blit(self.title_pannel, (0, 0))
+        else:
+            surface.blit(self.instructions, (0, 0))
+            self.shade.set_alpha(self.shade_alpha)
+            surface.blit(self.shade, (0, 0))
 
 
 
